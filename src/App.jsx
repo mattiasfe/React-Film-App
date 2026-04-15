@@ -6,6 +6,7 @@ import Spinner from './components/Spinner';
 import MovieCard from './components/MovieCard';
 import { useDebounce } from 'react-use';
 import { updateSearchCount } from './appwrite';
+import { client } from './lib/appwrite';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 
@@ -36,7 +37,10 @@ const App = () => {
     500,
     [searchTerm]
   );
-
+  // Verify Appwrite connection on app startup
+  useEffect(() => {
+    client.ping();
+  }, []);
   const fetchMovies = async (query = '') => {
     setIsLoading(false);
     setErrorMessage('');
@@ -63,7 +67,7 @@ const App = () => {
       if (query && data.results.length > 0) {
         await updateSearchCount(query, data.results[0]); // Oppdater søketellingen i Appwrite hver gang en søk utføres
       }
-      
+
     } catch (error) {
       console.error('Error fetching movies:', error);
       setErrorMessage('Failed to fetch movies. Please try again later.');
