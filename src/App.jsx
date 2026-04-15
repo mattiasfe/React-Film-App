@@ -60,7 +60,10 @@ const App = () => {
       }
       setMovieList(data.results || []);
 
-      updateSearchCount(); // Oppdater søketellingen i Appwrite hver gang en søk utføres
+      if (query && data.results.length > 0) {
+        await updateSearchCount(query, data.results[0]); // Oppdater søketellingen i Appwrite hver gang en søk utføres
+      }
+      
     } catch (error) {
       console.error('Error fetching movies:', error);
       setErrorMessage('Failed to fetch movies. Please try again later.');
