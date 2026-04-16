@@ -27,6 +27,28 @@ const App = () => {
   const [movieList, setMovieList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [debounceSearchTerm, setDebounceSearchTerm] = useState(searchTerm);
+  const [trendingMovies, setTrendingMovies] = useState([]);
+
+  const getTrendingMovies = async () => {
+    try {
+      const endpoint = `${API_BASE_URL}/trending/movie/week`;
+      const response = await fetch(endpoint, API_OPTIONS);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.results.map((movie) => ({
+        title: movie.title,
+        poster_url: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/No-Poster.png',
+        id: movie.id,
+      })) || [];
+    } catch (error) {
+      console.error('Error fetching trending movies:', error);
+      return [];
+    }
+  };
 
 
   // Debounce det du skriver i søkefelter for å hindre for mange API-kall mens du skriver
@@ -40,9 +62,11 @@ const App = () => {
   // Verify Appwrite connection on app startup
   useEffect(() => {
     client.ping();
+    fetchMovies(); // Load popular movies on app startup
   }, []);
+
   const fetchMovies = async (query = '') => {
-    setIsLoading(false);
+    setIsLoading(true);
     setErrorMessage('');
     try { 
       const endpoint = query
@@ -76,9 +100,23 @@ const App = () => {
     }
   }
 
+  const loadTrendingMovies = async () => {
+    try {
+      const movies = await getTrendingMovies();
+      setTrendingMovies(movies);
+    } catch (error) {
+      console.error('Error loading trending movies:', error);
+      
+    }
+  }
+
   useEffect(() => {
     fetchMovies(debounceSearchTerm);
   }, [debounceSearchTerm])
+
+  useEffect(() => {
+    loadTrendingMovies();
+  }, [])
 
   return (
     <main>
@@ -88,12 +126,25 @@ const App = () => {
           <header>
             <img src="./hero.png" alt="Hero Banner" />
             <h1>Find <span className='text-gradient'>Movies</span> You'll Enjoy Without The Hassle</h1>
+
+            <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
           </header>
 
-          <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-
+          {trendingMovies.length > 0 && (
+            <section className='trending'>
+              <h2>Trending Movies</h2>
+              <ul>
+                {trendingMovies.map((movie, index) => (
+                  <li key={index} className='trending-movie-item'>
+                    <p>{index + 1}</p>
+                    <img src={movie.poster_url} alt={movie.title} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <section className='all-movies'>
-            <h2 className='mt-[40px]'>All Movies</h2>
+            <h2>All Movies</h2>
 
             {isLoading ? (
               <Spinner />
